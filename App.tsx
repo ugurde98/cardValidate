@@ -22,42 +22,68 @@ import validationCard from "./validationCard";
 import { LinearGradient } from "expo-linear-gradient";
 import Chip from "./assets/Chip";
 import ElonkyGray from "./ElonkyGray";
+import { MaskedTextInput } from "react-native-mask-text";
 
 const { height, width, fontScale } = Dimensions.get("window");
 
 export default function App() {
-  const [date, setDate] = useState(new Date());
-  const [show, setShow] = useState(false);
-
-  const showPicker = useCallback((value: any) => setShow(value), []);
-
-  const onValueChange = useCallback(
-    (event: any, newDate: any) => {
-      const selectedDate = newDate || date;
-
-      showPicker(false);
-      setDate(selectedDate);
-    },
-    [date, showPicker]
-  );
-
   let animatedValue = new Animated.Value(0);
   let currentValue = 0;
   const isLoad = useRef(false);
   const [text, onChangeText] = useState("Useless Text");
   const [contentType, setContentType]: any = useState("");
   const [error, setError]: any = useState({});
-  const [values, setValues]: any = useState({
-    cardHolderName: "",
-    cardNumber: "",
-    expTime: "",
-    cvc: "",
+
+  const [unMaskedValue, setUnmaskedValue]: any = useState({
+    cardHolderName: {
+      value: "",
+      rawValue: "",
+      ref: "",
+      //mask: "",
+      style: "cardHolderName",
+      keyboardType: "default",
+      placeHolder: "Name and Surname",
+    },
+    cardNumber: {
+      value: "",
+      rawValue: "",
+      ref: "",
+      //mask: "",
+      style: "cardNumber",
+      keyboardType: "numeric",
+      placeHolder: "Card Number",
+    },
+    expTime: {
+      value: "",
+      rawValue: "",
+      ref: "",
+      mask: "99/99",
+      style: "expTime",
+      keyboardType: "numeric",
+      placeHolder: "MM/YY",
+    },
+    cvc: {
+      value: "",
+      rawValue: "",
+      ref: "",
+      mask: "999",
+      style: "cvc",
+      keyboardType: "numeric",
+      placeHolder: "Cvc",
+    },
   });
 
-  const handleChangeInput = (name: string, value: string) => {
-    setValues((prev: any) => ({
+  const handleChangeInput = (name: string, value: string, rawValue: string) => {
+    console.log("rawValue: ", rawValue);
+    console.log("value: ", value);
+
+    setUnmaskedValue((prev: any) => ({
       ...prev,
-      [name]: value,
+      [name]: {
+        ...prev[name],
+        value,
+        rawValue,
+      },
     }));
   };
 
@@ -90,10 +116,12 @@ export default function App() {
   };
 
   useEffect(() => {
-    const validCard = validationCard.checkCreditCard(values.cardNumber);
+    const validCard = validationCard.checkCreditCard(
+      unMaskedValue.cardNumber.rawValue
+    );
     console.log("validCard: ", validCard);
     setContentType(validCard.type);
-    if (!values.cardNumber || validCard.success)
+    if (!unMaskedValue.cardNumber.rawValue || validCard.success)
       setError((e: any) => {
         delete e.cardNumber;
         return e;
@@ -104,7 +132,7 @@ export default function App() {
         cardNumber: validCard.message,
       }));
     }
-  }, [values.cardNumber]);
+  }, [unMaskedValue.cardNumber.rawValue]);
 
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
@@ -191,10 +219,10 @@ export default function App() {
                             fontWeight: "700",
                           }}
                         >
-                          {values.cardNumber.slice(0, 4)}{" "}
-                          {values.cardNumber.slice(4, 8)}{" "}
-                          {values.cardNumber.slice(8, 12)}{" "}
-                          {values.cardNumber.slice(12, 16)}{" "}
+                          {unMaskedValue.cardNumber.rawValue.slice(0, 4)}{" "}
+                          {unMaskedValue.cardNumber.rawValue.slice(4, 8)}{" "}
+                          {unMaskedValue.cardNumber.rawValue.slice(8, 12)}{" "}
+                          {unMaskedValue.cardNumber.rawValue.slice(12, 16)}{" "}
                         </Text>
                       </View>
                       <View
@@ -214,7 +242,7 @@ export default function App() {
                           }}
                         >
                           {" "}
-                          {values.cardHolderName.toUpperCase()}{" "}
+                          {unMaskedValue.cardHolderName.rawValue.toUpperCase()}{" "}
                         </Text>
                       </View>
                       <View
@@ -241,8 +269,8 @@ export default function App() {
                             }}
                           >
                             {" "}
-                            {values.expTime.slice(0, 2)}/
-                            {values.expTime.slice(2, 4)}{" "}
+                            {unMaskedValue.expTime.rawValue.slice(0, 2)}/
+                            {unMaskedValue.expTime.rawValue.slice(2, 4)}{" "}
                           </Text>
                         </View>
                       </View>
@@ -296,7 +324,7 @@ export default function App() {
                               fontSize: fontScale * 16,
                             }}
                           >
-                            {values.cvc}
+                            {unMaskedValue.cvc.rawValue}
                           </Text>
                         </View>
                       </View>
@@ -315,32 +343,53 @@ export default function App() {
               justifyContent: "center",
             }}
           >
-            {Object.keys(values).map((valueKey: string, index: number) => (
-              <View key={index}>
-               
-                  <TextInput
-                    keyboardType={
-                      valueKey == "cardHolderName"
-                        ? "default"
-                        : "decimal-pad"
-                    }
-                    placeholder={valueKey}
-                    style={styles[valueKey]}
-                    //autoFocus={true}
-                    onChangeText={(value) => handleChangeInput(valueKey, value)}
-                    //value={values[valueKey]}
-                    onFocus={() =>
-                      valueKey === "cvc" ? setPage(false) : setPage(true)
-                    }
-                    onBlur={() => valueKey === "cvc" && setPage(true)}
-                    
-                    
-
-                  />
+            {Object.keys(unMaskedValue).map(
+              (valueKey: string, index: number) => (
+                <View key={index}>
                 
-                {error[valueKey] && <Text style={{color:"red"}} > {error[valueKey]} </Text>}
-              </View>
-            ))}
+                    <MaskedTextInput
+                      mask={unMaskedValue[valueKey].mask}
+                      onChangeText={(value, rawValue) => {
+                        handleChangeInput(valueKey, value, rawValue);
+                      }}
+                      style={styles[valueKey]}
+                      keyboardType={unMaskedValue[valueKey].keyboardType}
+                      placeholder={unMaskedValue[valueKey].placeHolder}
+                      onFocus={() =>
+                        unMaskedValue[valueKey].style === "cvc"
+                          ? setPage(false)
+                          : setPage(true)
+                      }
+                      onBlur={() =>
+                        unMaskedValue[valueKey].style === "cvc" && setPage(true)
+                      }
+                      autoComplete="off"
+                    />
+                  
+
+                  {/* <TextInput
+                  keyboardType={
+                    valueKey == "cardHolderName" ? "twitter" : "decimal-pad"
+                  }
+                  placeholder={valueKey}
+                  style={styles[valueKey]}
+                  //autoFocus={true}
+                  onChangeText={(value) => handleChangeInput(valueKey, value)}
+                  //value={values[valueKey]}
+                  onFocus={() =>
+                    valueKey === "cvc" ? setPage(false) : setPage(true)
+                  }
+                  //maxLength={5}
+                  autoComplete="cc-csc"
+                  onBlur={() => valueKey === "cvc" && setPage(true)}
+                /> */}
+
+                  {error[valueKey] && (
+                    <Text style={{ color: "red" }}> {error[valueKey]} </Text>
+                  )}
+                </View>
+              )
+            )}
           </View>
         </View>
 
@@ -370,7 +419,7 @@ const styles: any = StyleSheet.create({
     height: 40,
     margin: 12,
     borderBottomWidth: 1,
-    borderColor:  "#c1c1c1",
+    borderColor: "#c1c1c1",
 
     padding: 10,
   },
@@ -379,7 +428,7 @@ const styles: any = StyleSheet.create({
     height: 40,
     margin: 12,
     borderWidth: 1,
-    borderColor:  "red",
+    borderColor: "red",
     padding: 10,
   },
   expTime: {
