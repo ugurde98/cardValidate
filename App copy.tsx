@@ -261,8 +261,7 @@ export default function App() {
                         {contentType && (
                           <Image
                             source={{ uri: contentType.url }}
-                            style={{ width: width * 0.2, height: width * 0.15 }}
-                            resizeMode="contain"
+                            style={{ width: width * 0.2, height: width * 0.1 }}
                           />
                         )}
                       </View>
@@ -317,12 +316,12 @@ export default function App() {
           >
             {Object.keys(values).map((valueKey: string, index: number) => (
               <View key={index}>
-               
+                {valueKey !== "expTime" ? (
                   <TextInput
                     keyboardType={
-                      valueKey == "cardHolderName"
-                        ? "default"
-                        : "decimal-pad"
+                      valueKey == "cardNumber" || valueKey == "cvc"
+                        ? "number-pad"
+                        : "default"
                     }
                     placeholder={valueKey}
                     style={styles[valueKey]}
@@ -333,12 +332,15 @@ export default function App() {
                       valueKey === "cvc" ? setPage(false) : setPage(true)
                     }
                     onBlur={() => valueKey === "cvc" && setPage(true)}
-                    
-                    
-
                   />
-                
-                {error[valueKey] && <Text style={{color:"red"}} > {error[valueKey]} </Text>}
+                ) : (
+                  <>
+                    
+                      <Text>Month Year Picker Example</Text>
+                    
+                  </>
+                )}
+                {error[valueKey] && <Text> {error[valueKey]} </Text>}
               </View>
             ))}
           </View>
@@ -370,16 +372,8 @@ const styles: any = StyleSheet.create({
     height: 40,
     margin: 12,
     borderBottomWidth: 1,
-    borderColor:  "#c1c1c1",
+    borderColor: "#c1c1c1",
 
-    padding: 10,
-  },
-  cardNumberErr: {
-    width: width * 0.76,
-    height: 40,
-    margin: 12,
-    borderWidth: 1,
-    borderColor:  "red",
     padding: 10,
   },
   expTime: {
